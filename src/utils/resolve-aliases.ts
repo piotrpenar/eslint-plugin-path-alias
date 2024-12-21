@@ -1,6 +1,6 @@
 import { type Rule } from "eslint";
 import { type TsConfigResult, getTsconfig } from "get-tsconfig";
-import { resolve, dirname } from "node:path";
+import { resolve, dirname, normalize } from "node:path";
 import findPkg from "find-pkg";
 import { readFileSync } from "node:fs";
 
@@ -37,7 +37,7 @@ function resolvePackageImports(pkg: any, pkgPath: string) {
   Object.entries(imports).forEach(([alias, path]) => {
     if (!path) return;
     if (typeof path !== "string") return;
-    const resolved = resolve(base, path);
+    const resolved = normalize(resolve(base, path));
     aliases.set(alias, [resolved]);
   });
 
@@ -55,7 +55,7 @@ function resolveTsconfigPaths(config: TsConfigResult) {
 
   Object.entries(paths).forEach(([alias, path]) => {
     alias = alias.replace(/\/\*$/, "");
-    path = path.map((p) => resolve(base, p.replace(/\/\*$/, "")));
+    path = path.map((p) => normalize(resolve(base, p.replace(/\/\*$/, ""))));
     aliases.set(alias, path);
   });
 
@@ -70,13 +70,13 @@ function resolveCustomPaths(context: Rule.RuleContext) {
     if (!path) return;
     if (typeof path !== "string") return;
 
-    if (path.startsWith("/")) {
-      aliases.set(alias, [path]);
+    if (path.startsWith("/") || /^[A-Z]:\\/i.test(path)) {
+      aliases.set(alias, [normalize(path)]);
       return;
     }
 
     const cwd = context.getCwd?.() ?? context.cwd;
-    const resolved = resolve(cwd, path);
+    const resolved = normalize(resolve(cwd, path));
     aliases.set(alias, [resolved]);
   });
 

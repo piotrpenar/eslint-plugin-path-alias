@@ -40,22 +40,46 @@ ruleTester.run("no-relative-with-tsconfig", rule, {
     test({
       code: `import a from './a'`,
       output: `import a from '#current/a'`,
-      errors: [{ message: rule.meta.messages.shouldUseAlias }],
+      errors: [{
+        message: rule.meta.messages.shouldUseAlias,
+        suggestions: [{
+          messageId: "suggestAlias",
+          output: `import a from '#current/a'`,
+        }],
+      }],
     }),
     test({
       code: `import b from '../b'`,
       output: `import b from '#parent/b'`,
-      errors: [{ message: rule.meta.messages.shouldUseAlias }],
+      errors: [{
+        message: rule.meta.messages.shouldUseAlias,
+        suggestions: [{
+          messageId: "suggestAlias",
+          output: `import b from '#parent/b'`,
+        }],
+      }],
     }),
     test({
       code: `const a = import('./a')`,
       output: `const a = import('#current/a')`,
-      errors: [{ message: rule.meta.messages.shouldUseAlias }],
+      errors: [{
+        message: rule.meta.messages.shouldUseAlias,
+        suggestions: [{
+          messageId: "suggestAlias",
+          output: `const a = import('#current/a')`,
+        }],
+      }],
     }),
     test({
       code: `const b = import('../b')`,
       output: `const b = import('#parent/b')`,
-      errors: [{ message: rule.meta.messages.shouldUseAlias }],
+      errors: [{
+        message: rule.meta.messages.shouldUseAlias,
+        suggestions: [{
+          messageId: "suggestAlias",
+          output: `const b = import('#parent/b')`,
+        }],
+      }],
     }),
   ],
 });

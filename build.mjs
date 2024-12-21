@@ -1,30 +1,27 @@
-import esbuild from "esbuild";
-import { resolve } from "node:path";
-import pkg from "./package.json" assert { type: "json" };
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+import { build } from "esbuild";
 
-/**
- * @type {import('esbuild').BuildOptions[]}
- */
-const outputs = [
-  {
-    format: "esm",
-    outfile: "./dist/index.mjs",
-    target: "es2020",
-  },
-  {
-    format: "cjs",
-    outfile: "./dist/index.js",
-    target: "es2020",
-  },
-];
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf8"));
 
-outputs.forEach((output) => {
-  esbuild.build({
-    ...output,
-    entryPoints: [resolve("./src/index.ts")],
-    bundle: true,
-    minify: true,
-    platform: "node",
-    external: ["eslint", "nanomatch", "get-tsconfig", "find-pkg"],
-  });
+await build({
+  entryPoints: ["src/index.ts"],
+  outfile: "dist/index.js",
+  bundle: true,
+  platform: "node",
+  target: "node14",
+  format: "cjs",
+  external: Object.keys(pkg.dependencies || {}),
+});
+
+await build({
+  entryPoints: ["src/index.ts"],
+  outfile: "dist/index.mjs",
+  bundle: true,
+  platform: "node",
+  target: "node14",
+  format: "esm",
+  external: Object.keys(pkg.dependencies || {}),
 });

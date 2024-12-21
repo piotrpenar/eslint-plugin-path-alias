@@ -6,7 +6,6 @@ const rule = plugin.rules["no-relative"];
 const ruleTester = new RuleTester();
 
 /**
- *
  * @param {import('eslint').RuleTester.ValidTestCase} config
  * @returns {import('eslint').RuleTester.ValidTestCase}
  */
@@ -40,22 +39,46 @@ ruleTester.run("no-relative-with-imports", rule, {
     test({
       code: `import a from './a'`,
       output: `import a from '#imports/a'`,
-      errors: [{ message: rule.meta.messages.shouldUseAlias }],
+      errors: [{
+        message: rule.meta.messages.shouldUseAlias,
+        suggestions: [{
+          messageId: "suggestAlias",
+          output: `import a from '#imports/a'`,
+        }],
+      }],
     }),
     test({
       code: `import b from '../b'`,
       output: `import b from '#tests/b'`,
-      errors: [{ message: rule.meta.messages.shouldUseAlias }],
+      errors: [{
+        message: rule.meta.messages.shouldUseAlias,
+        suggestions: [{
+          messageId: "suggestAlias",
+          output: `import b from '#tests/b'`,
+        }],
+      }],
     }),
     test({
       code: `const a = import('./a')`,
       output: `const a = import('#imports/a')`,
-      errors: [{ message: rule.meta.messages.shouldUseAlias }],
+      errors: [{
+        message: rule.meta.messages.shouldUseAlias,
+        suggestions: [{
+          messageId: "suggestAlias",
+          output: `const a = import('#imports/a')`,
+        }],
+      }],
     }),
     test({
       code: `const b = import('../b')`,
       output: `const b = import('#tests/b')`,
-      errors: [{ message: rule.meta.messages.shouldUseAlias }],
+      errors: [{
+        message: rule.meta.messages.shouldUseAlias,
+        suggestions: [{
+          messageId: "suggestAlias",
+          output: `const b = import('#tests/b')`,
+        }],
+      }],
     }),
   ],
 });

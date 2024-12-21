@@ -13,72 +13,80 @@ function test(config) {
   const options = config.options?.[0] ?? {};
   return {
     ...config,
-    filename: import.meta.filename,
+    filename: "C:\\projects\\my-app\\src\\components\\Button.js",
+    options: [
+      {
+        ...options,
+        paths: {
+          "@/components": "C:\\projects\\my-app\\src\\components",
+          "@/utils": "C:\\projects\\my-app\\src\\utils",
+        },
+      },
+    ],
   };
 }
 
-ruleTester.run("no-relative-with-tsconfig", rule, {
+ruleTester.run("no-relative-windows", rule, {
   valid: [
     test({
-      code: `import styles from './a.css'`,
+      code: `import styles from './Button.module.css'`,
       options: [{ exceptions: ["*.css"] }],
     }),
     test({
-      code: `import styles from '../../a'`,
+      code: `import styles from '@/components/Button.module.css'`,
     }),
     test({
-      code: `const styles = import('./a.css')`,
-      options: [{ exceptions: ["*.css"] }],
+      code: `import { utils } from '@/utils/helpers'`,
     }),
     test({
-      code: `const a = import('../../a')`,
+      code: `const styles = import('./Button.module.css')`,
       options: [{ exceptions: ["*.css"] }],
     }),
   ],
   invalid: [
     test({
-      code: `import a from './a'`,
-      output: `import a from '#current/a'`,
+      code: `import Button from './Button'`,
+      output: `import Button from '@/components/Button'`,
       errors: [{
         message: rule.meta.messages.shouldUseAlias,
         suggestions: [{
           messageId: "suggestAlias",
-          output: `import a from '#current/a'`,
+          output: `import Button from '@/components/Button'`,
         }],
       }],
     }),
     test({
-      code: `import b from '../b'`,
-      output: `import b from '#parent/b'`,
+      code: `import { utils } from '../utils/helpers'`,
+      output: `import { utils } from '@/utils/helpers'`,
       errors: [{
         message: rule.meta.messages.shouldUseAlias,
         suggestions: [{
           messageId: "suggestAlias",
-          output: `import b from '#parent/b'`,
+          output: `import { utils } from '@/utils/helpers'`,
         }],
       }],
     }),
     test({
-      code: `const a = import('./a')`,
-      output: `const a = import('#current/a')`,
+      code: `const Button = import('./Button')`,
+      output: `const Button = import('@/components/Button')`,
       errors: [{
         message: rule.meta.messages.shouldUseAlias,
         suggestions: [{
           messageId: "suggestAlias",
-          output: `const a = import('#current/a')`,
+          output: `const Button = import('@/components/Button')`,
         }],
       }],
     }),
     test({
-      code: `const b = import('../b')`,
-      output: `const b = import('#parent/b')`,
+      code: `const utils = import('../utils/helpers')`,
+      output: `const utils = import('@/utils/helpers')`,
       errors: [{
         message: rule.meta.messages.shouldUseAlias,
         suggestions: [{
           messageId: "suggestAlias",
-          output: `const b = import('#parent/b')`,
+          output: `const utils = import('@/utils/helpers')`,
         }],
       }],
     }),
   ],
-});
+}); 

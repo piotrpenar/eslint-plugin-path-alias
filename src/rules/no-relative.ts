@@ -1,18 +1,20 @@
 import { Rule } from "eslint";
-import { dirname, resolve, basename } from "node:path";
+import { dirname, resolve, basename, normalize, sep } from "node:path";
 import nanomatch from "nanomatch";
 import { docsUrl } from "../utils/docs-url";
 import { resolveAliases } from "../utils/resolve-aliases";
 
 export const noRelative = {
   meta: {
-    type: "suggestion",
+    type: "problem",
     docs: {
       description:
         "Ensure imports use path aliases whenever possible vs. relative paths",
       url: docsUrl("no-relative"),
+      recommended: true,
     },
     fixable: "code",
+    hasSuggestions: true,
     schema: [
       {
         type: "object",
@@ -32,6 +34,7 @@ export const noRelative = {
     ],
     messages: {
       shouldUseAlias: "Import should use path alias instead of relative path",
+      suggestAlias: "Replace with path alias",
     },
   },
   create(context) {
@@ -55,7 +58,7 @@ export const noRelative = {
           return;
         }
 
-        const resolved = resolve(dirname(filePath), importPath);
+        const resolved = normalize(resolve(dirname(filePath), importPath));
         const excepted = matchExceptions(resolved, exceptions);
 
         if (excepted) return;
@@ -73,6 +76,16 @@ export const noRelative = {
             const fixed = raw.replace(importPath, aliased);
             return fixer.replaceText(node.source, fixed);
           },
+          suggest: [
+            {
+              messageId: "suggestAlias",
+              fix(fixer) {
+                const aliased = insertAlias(resolved, alias, aliases.get(alias));
+                const fixed = raw.replace(importPath, aliased);
+                return fixer.replaceText(node.source, fixed);
+              },
+            },
+          ],
         });
       },
       ImportDeclaration(node) {
@@ -84,7 +97,7 @@ export const noRelative = {
           return;
         }
 
-        const resolved = resolve(dirname(filePath), importPath);
+        const resolved = normalize(resolve(dirname(filePath), importPath));
         const excepted = matchExceptions(resolved, exceptions);
         const alias = matchToAlias(resolved, aliases);
 
@@ -101,6 +114,17 @@ export const noRelative = {
             const fixed = raw.replace(importPath, aliased);
             return fixer.replaceText(node.source, fixed);
           },
+          suggest: [
+            {
+              messageId: "suggestAlias",
+              fix(fixer) {
+                const raw = node.source.raw;
+                const aliased = insertAlias(resolved, alias, aliases.get(alias));
+                const fixed = raw.replace(importPath, aliased);
+                return fixer.replaceText(node.source, fixed);
+              },
+            },
+          ],
         });
       },
     };
@@ -110,11 +134,11 @@ export const noRelative = {
 function matchToAlias(path: string, aliases: Map<string, string[]>) {
   return Array.from(aliases.keys()).find((alias) => {
     const paths = aliases.get(alias);
-    return paths.some((aliasPath) => path.indexOf(aliasPath) === 0);
+    return paths.some((aliasPath) => normalize(path).startsWith(normalize(aliasPath)));
   });
 }
 
-function matchExceptions(path, exceptions) {
+function matchExceptions(path: string, exceptions?: string[]) {
   if (!exceptions) return false;
   const filename = basename(path);
   const matches = nanomatch(filename, exceptions);
@@ -123,7 +147,10 @@ function matchExceptions(path, exceptions) {
 
 function insertAlias(path: string, alias: string, aliasPaths: string[]) {
   for (let aliasPath of aliasPaths) {
-    if (path.indexOf(aliasPath) !== 0) continue;
-    return path.replace(aliasPath, alias);
+    const normalizedPath = normalize(path);
+    const normalizedAliasPath = normalize(aliasPath);
+    if (!normalizedPath.startsWith(normalizedAliasPath)) continue;
+    const relativePath = normalizedPath.slice(normalizedAliasPath.length);
+    return `${alias}${relativePath.startsWith(sep) ? relativePath.replace(/\\/g, '/') : '/' + relativePath.replace(/\\/g, '/')}`;
   }
 }
